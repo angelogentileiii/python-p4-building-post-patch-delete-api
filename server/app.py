@@ -15,11 +15,11 @@ migrate = Migrate(app, db)
 
 db.init_app(app)
 
-@app.route('/')
+@app.get('/')
 def index():
     return "Index for Game/Review/User API"
 
-@app.route('/games')
+@app.get('/games')
 def games():
 
     games = []
@@ -39,7 +39,7 @@ def games():
 
     return response
 
-@app.route('/games/<int:id>')
+@app.get('/games/<int:id>')
 def game_by_id(id):
     game = Game.query.filter(Game.id == id).first()
     
@@ -52,7 +52,7 @@ def game_by_id(id):
 
     return response
 
-@app.route('/reviews')
+@app.get('/reviews')
 def reviews():
 
     reviews = []
@@ -67,7 +67,63 @@ def reviews():
 
     return response
 
-@app.route('/users')
+@app.get('/reviews/<int:id>')
+def review_by_id(id):
+    review = Review.query.filter(Review.id == id).first()
+    
+    if not review:
+        return {'Error': f'Review with id {id} does not currently exist.'}, 404
+
+    review_dict = review.to_dict()
+
+    response = make_response(
+        review_dict,
+        200
+    )
+
+    return response
+
+@app.post('/reviews')
+def add_review():
+    new_review = Review()
+    review_data = request.get_json()
+
+    for key in review_data:
+        setattr(new_review, key, review_data[key])
+    
+    db.session.add(new_review)
+    db.session.commit()
+
+    return new_review.to_dict(), 201
+
+@app.patch('/reviews/<int:id>')
+def update_reviews(id: int):
+    review = Review.query.get(id)
+    review_data = request.get_json()
+    
+    if not review:
+        return {'Error': f'Review with id {id} does not currently exist.'}
+    
+    for key in review_data:
+        setattr(review, key, review_data[key])
+
+    db.session.add(review)
+    db.session.commit()
+
+    return review.to_dict(), 202
+
+@app.delete('/reviews/<int:id>')
+def delete_review(id: int):
+    review = Review.query.get(id)
+
+    if not review:
+        return {'Error': f'Review with id {id} does not currently exist.'}, 404
+
+    db.session.delete(review)
+    db.session.commit()
+    return {}, 205
+
+@app.get('/users')
 def users():
 
     users = []
